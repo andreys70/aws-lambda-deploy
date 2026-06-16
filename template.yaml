@@ -83,7 +83,6 @@ Resources:
       CodeUri: ./src                     # path to your source code folder
       Role: !GetAtt LambdaExecutionRole.Arn
       Description: !Sub "My Lambda function (${Environment})"
-      ReservedConcurrentExecutions: 10   # optional: limit concurrency
       Environment:
         Variables:
           TABLE_NAME: !Sub "my-table-${Environment}"
