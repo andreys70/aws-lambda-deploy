@@ -3,7 +3,7 @@ import json
 def handler(event, context):
     return {
         'statusCode': 200,
-        'body': 'Hello, World!'
+        'body': 'Privet, Andrey!'
     }
 
 if __name__ == '__main__':
