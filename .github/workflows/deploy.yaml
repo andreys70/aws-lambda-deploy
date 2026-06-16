@@ -26,8 +26,7 @@ jobs:
       name: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
 
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true
-      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       AWS_REGION: us-east-2             # change to your region
       STACK_NAME: my-lambda-stack       # CloudFormation stack name
       SAM_BUCKET: my-sam-artifacts      # S3 bucket for SAM build artifacts
