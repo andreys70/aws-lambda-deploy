@@ -29,7 +29,7 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       AWS_REGION: us-east-2             # change to your region
       STACK_NAME: my-lambda-stack       # CloudFormation stack name
-      SAM_BUCKET: my-sam-artifacts      # S3 bucket for SAM build artifacts
+      SAM_BUCKET: deployment-artifacts-497862080258-us-east-2-an      # S3 bucket for SAM build artifacts
 
     steps:
 
