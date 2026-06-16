@@ -1,0 +1,168 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: AWS Lambda Function Deployment Template
+
+# ─────────────────────────────────────────────
+# PARAMETERS — override at deploy time
+# ─────────────────────────────────────────────
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues: [dev, staging, prod]
+    Description: Deployment environment
+
+  FunctionName:
+    Type: String
+    Default: my-lambda-function
+    Description: Name of the Lambda function
+
+# ─────────────────────────────────────────────
+# GLOBALS — applied to all Lambda functions
+# ─────────────────────────────────────────────
+Globals:
+  Function:
+    Runtime: python3.12          # Change to nodejs20.x, java21, etc. as needed
+    Timeout: 30                  # seconds
+    MemorySize: 256              # MB
+    Environment:
+      Variables:
+        ENV: !Ref Environment
+    Tracing: Active              # Enables AWS X-Ray tracing
+    Tags:
+      Environment: !Ref Environment
+      Project: my-project
+
+# ─────────────────────────────────────────────
+# RESOURCES
+# ─────────────────────────────────────────────
+Resources:
+
+  # --- IAM Role for Lambda ---
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${FunctionName}-execution-role-${Environment}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: LambdaCustomPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Example: Allow read/write to a specific S3 bucket
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Sub "arn:aws:s3:::my-bucket-${Environment}/*"
+              # Example: Allow DynamoDB access
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/my-table-${Environment}"
+
+  # --- Lambda Function ---
+  MyLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${FunctionName}-${Environment}"
+      Handler: lambda_function.handler   # filename.exported_function
+      CodeUri: ./src                     # path to your source code folder
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Description: !Sub "My Lambda function (${Environment})"
+      ReservedConcurrentExecutions: 10   # optional: limit concurrency
+      Environment:
+        Variables:
+          TABLE_NAME: !Sub "my-table-${Environment}"
+          BUCKET_NAME: !Sub "my-bucket-${Environment}"
+      Events:
+        # Trigger 1: API Gateway (HTTP)
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApiGateway
+            Path: /invoke
+            Method: POST
+        # Trigger 2: Scheduled (cron)
+        ScheduledEvent:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)
+            Enabled: true
+        # Trigger 3: S3 event (uncomment to use)
+        # S3Event:
+        #   Type: S3
+        #   Properties:
+        #     Bucket: !Ref MyS3Bucket
+        #     Events: s3:ObjectCreated:*
+
+  # --- API Gateway ---
+  MyApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub "${FunctionName}-api-${Environment}"
+      StageName: !Ref Environment
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+      Auth:
+        DefaultAuthorizer: NONE          # Change to AWS_IAM or a Cognito authorizer if needed
+
+  # --- CloudWatch Log Group ---
+  LambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${FunctionName}-${Environment}"
+      RetentionInDays: 30
+
+  # --- CloudWatch Alarm: error rate ---
+  LambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${FunctionName}-errors-${Environment}"
+      AlarmDescription: "Lambda function error rate too high"
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref MyLambdaFunction
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 5
+      Threshold: 5
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+# ─────────────────────────────────────────────
+# OUTPUTS
+# ─────────────────────────────────────────────
+Outputs:
+  LambdaFunctionArn:
+    Description: ARN of the deployed Lambda function
+    Value: !GetAtt MyLambdaFunction.Arn
+    Export:
+      Name: !Sub "${FunctionName}-arn-${Environment}"
+
+  ApiGatewayUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${MyApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/invoke"
+    Export:
+      Name: !Sub "${FunctionName}-api-url-${Environment}"
+
+  LambdaExecutionRoleArn:
+    Description: ARN of the Lambda execution IAM role
+    Value: !GetAtt LambdaExecutionRole.Arn
