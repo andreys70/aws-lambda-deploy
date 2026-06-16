@@ -1,0 +1,107 @@
+name: Deploy Lambda to AWS
+
+on:
+  push:
+    branches:
+      - main          # deploy to prod on merge to main
+      - staging       # deploy to staging on merge to staging
+  pull_request:
+    branches:
+      - main          # run sam build/validate on PRs (no deploy)
+
+# ─────────────────────────────────────────────
+# PERMISSIONS (needed for OIDC auth — recommended)
+# ─────────────────────────────────────────────
+permissions:
+  id-token: write   # required for OIDC
+  contents: read
+
+jobs:
+  deploy:
+    name: Build & Deploy Lambda
+    runs-on: ubuntu-latest
+
+    # Determine environment based on branch
+    environment:
+      name: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
+
+    env:
+      AWS_REGION: us-east-2             # change to your region
+      STACK_NAME: my-lambda-stack       # CloudFormation stack name
+      SAM_BUCKET: my-sam-artifacts      # S3 bucket for SAM build artifacts
+
+    steps:
+
+      # 1. Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Set up Python (match your Lambda runtime)
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # 3. Set up AWS SAM CLI
+      - name: Set up AWS SAM CLI
+        uses: aws-actions/setup-sam@v2
+
+      # ── OPTION A: OIDC (recommended — no long-lived keys) ──────────────
+      # Requires a trust policy set up in AWS IAM for GitHub OIDC provider
+      # - name: Configure AWS credentials (OIDC)
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+      #     aws-region: ${{ env.AWS_REGION }}
+
+      # ── OPTION B: Access keys (simpler but less secure) ─────────────────
+      # Uncomment this block and remove OPTION A if you prefer key-based auth
+      # Add AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to GitHub Secrets
+      - name: Configure AWS credentials (keys)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 4. Determine deployment environment
+      - name: Set environment name
+        id: set-env
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "ENV_NAME=prod" >> $GITHUB_ENV
+          else
+            echo "ENV_NAME=staging" >> $GITHUB_ENV
+          fi
+
+      # 5. Validate SAM template
+      - name: Validate SAM template
+        run: sam validate --template template.yaml --region ${{ env.AWS_REGION }}
+
+      # 6. Build Lambda package
+      - name: SAM Build
+        run: sam build --template template.yaml --use-container
+
+      # 7. Deploy (skip on PRs — validate only)
+      - name: SAM Deploy
+        if: github.event_name == 'push'
+        run: |
+          sam deploy \
+            --stack-name ${{ env.STACK_NAME }}-${{ env.ENV_NAME }} \
+            --s3-bucket ${{ env.SAM_BUCKET }} \
+            --region ${{ env.AWS_REGION }} \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides \
+              Environment=${{ env.ENV_NAME }} \
+              FunctionName=my-lambda-function
+
+      # 8. Print deployed API URL from stack outputs
+      - name: Get stack outputs
+        if: github.event_name == 'push'
+        run: |
+          aws cloudformation describe-stacks \
+            --stack-name ${{ env.STACK_NAME }}-${{ env.ENV_NAME }} \
+            --query "Stacks[0].Outputs" \
+            --output table
