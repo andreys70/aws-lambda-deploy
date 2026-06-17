@@ -19,7 +19,10 @@
                 "cloudformation:DeleteStack",
                 "cloudformation:ValidateTemplate"
             ],
-            "Resource": "*"
+            "Resource": [
+                "arn:aws:cloudformation:*:[AWS_ACCOUNT_ID]:stack/*/*",
+                "arn:aws:cloudformation:[AWS_REGION]:aws:transform/Serverless-2016-10-31"
+            ]
         },
         {
             "Effect": "Allow",
@@ -52,32 +55,55 @@
                 "iam:UntagRole",
                 "iam:PassRole"
             ],
-            "Resource": "arn:aws:iam:[AWS_ACCOUNT_ID]:role/github-actions-lambda-function-execution-role-*"
+            "Resource": "arn:aws:iam::[AWS_ACCOUNT_ID]:role/github-actions-*"
         },
         {
             "Effect": "Allow",
-            "Action": "lambda:*",
-            "Resource": "arn:aws:lambda:[AWS_REGION]:[AWS_ACCOUNT_ID]:function:github-actions-lambda-function-*"
+            "Action": [
+                "lambda:CreateFunction",
+                "lambda:UpdateFunctionCode",
+                "lambda:UpdateFunctionConfiguration",
+                "lambda:DeleteFunction",
+                "lambda:GetFunction",
+                "lambda:GetFunctionConfiguration",
+                "lambda:AddPermission",
+                "lambda:RemovePermission",
+                "lambda:TagResource",
+                "lambda:ListTags"
+            ],
+            "Resource": "arn:aws:lambda:*:[AWS_ACCOUNT_ID]:function:*"
         },
         {
             "Effect": "Allow",
-            "Action": "logs:*",
-            "Resource": "arn:aws:logs:[AWS_REGION]:[AWS_ACCOUNT_ID]:log-group:/aws/lambda/github-actions-lambda-function-*"
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:DeleteLogGroup",
+                "logs:DescribeLogGroups",
+                "logs:PutRetentionPolicy",
+                "logs:TagLogGroup"
+            ],
+            "Resource": "arn:aws:logs:*:[AWS_ACCOUNT_ID]:log-group:*"
         },
         {
             "Effect": "Allow",
-            "Action": "apigateway:*",
-            "Resource": "arn:aws:apigateway:[AWS_REGION]::/*"
+            "Action": [
+                "apigateway:GET",
+                "apigateway:POST",
+                "apigateway:PUT",
+                "apigateway:DELETE",
+                "apigateway:PATCH"
+            ],
+            "Resource": "arn:aws:apigateway:*::*"
         },
         {
             "Effect": "Allow",
             "Action": "cloudwatch:*",
-            "Resource": "arn:aws:cloudwatch:[AWS_REGION]:[AWS_ACCOUNT_ID]:alarm:github-actions-lambda-function-errors-*"
+            "Resource": "arn:aws:cloudwatch:[AWS_REGION]:[AWS_ACCOUNT_ID]:alarm:*"
         },
         {
             "Effect": "Allow",
             "Action": "events:*",
-            "Resource": "arn:aws:events:[AWS_REGION]:[AWS_ACCOUNT_ID]:rule/github-actions-lambda-stack-prod-*"
+            "Resource": "arn:aws:events:[AWS_REGION]:[AWS_ACCOUNT_ID]:rule/*"
         }
     ]
 }
