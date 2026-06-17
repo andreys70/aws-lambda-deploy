@@ -1,11 +1,8 @@
 secrets:
   - AWS_ARN_ROLE
-  - AWS_ACCOUNT_ID
 
-variables:
 env:
   AWS_DEFAULT_REGION: "us-east-2"
-  SAM_BUCKET: "deployment-artifacts-$$AWS_ACCOUNT_ID-$$AWS_DEFAULT_REGION-an"
   
 steps:
  
@@ -45,10 +42,13 @@ steps:
       export AWS_ACCESS_KEY_ID=$$(echo $$CREDENTIALS | jq -r '.Credentials.AccessKeyId')
       export AWS_SECRET_ACCESS_KEY=$$(echo $$CREDENTIALS | jq -r '.Credentials.SecretAccessKey')
       export AWS_SESSION_TOKEN=$$(echo $$CREDENTIALS | jq -r '.Credentials.SessionToken')
-      
+
+      ACCOUNT_ID=$$(aws sts get-caller-identity --query Account --output text)
+      SAM_BUCKET="deployment-artifacts-$${ACCOUNT_ID}-$${AWS_DEFAULT_REGION}-an"
+
       sam deploy \
         --stack-name buildkite-lambda-stack-staging \
-        --s3-bucket $$SAM_BUCKET \
+        --s3-bucket "$$SAM_BUCKET" \
         --s3-prefix buildkite \
         --region $$AWS_DEFAULT_REGION \
         --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
@@ -82,10 +82,13 @@ steps:
       export AWS_ACCESS_KEY_ID=$$(echo $$CREDENTIALS | jq -r '.Credentials.AccessKeyId')
       export AWS_SECRET_ACCESS_KEY=$$(echo $$CREDENTIALS | jq -r '.Credentials.SecretAccessKey')
       export AWS_SESSION_TOKEN=$$(echo $$CREDENTIALS | jq -r '.Credentials.SessionToken')
-      
+
+      ACCOUNT_ID=$$(aws sts get-caller-identity --query Account --output text)
+      SAM_BUCKET="deployment-artifacts-$${ACCOUNT_ID}-$${AWS_DEFAULT_REGION}-an"
+
       sam deploy \
         --stack-name buildkite-lambda-stack-prod \
-        --s3-bucket $$SAM_BUCKET \
+        --s3-bucket "$$SAM_BUCKET" \
         --s3-prefix buildkite \
         --region $$AWS_DEFAULT_REGION \
         --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
