@@ -194,8 +194,8 @@ aws cloudformation describe-stacks \
 | Setting | Where | Current value |
 |---|---|---|
 | AWS region | workflow env `AWS_REGION` | `us-east-2` |
-| AWS account | repo variable `AWS_ACCOUNT_ID` | `<account>` |
-| SAM artifacts bucket | repo variable `SAM_BUCKET` | `deployment-artifacts-<account>-us-east-2-an` |
+| AWS account | n/a | `<account>` |
+| SAM artifacts bucket | workflow env `SAM_BUCKET` | `deployment-artifacts-<account>-us-east-2-an` |
 | Stack name pattern | workflow env `STACK_NAME` | `github-actions-lambda-stack-<env>` |
 | Function name pattern | parameter `FunctionName` | `github-actions-lambda-function-<env>` |
 | Lambda runtime | `template.yaml` Globals | `python3.12` |

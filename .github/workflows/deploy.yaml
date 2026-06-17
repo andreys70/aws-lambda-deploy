@@ -29,7 +29,7 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       AWS_REGION: us-east-2             # change to your region
       STACK_NAME: github-actions-lambda-stack       # CloudFormation stack name
-      SAM_BUCKET: ${{ vars.SAM_BUCKET }}      # set in repo: Settings → Variables → Actions → SAM_BUCKET
+      SAM_BUCKET: deployment-artifacts-497862080258-us-east-2-an      # S3 bucket for SAM build artifacts
 
     steps:
 
@@ -90,6 +90,7 @@ jobs:
           sam deploy \
             --stack-name ${{ env.STACK_NAME }}-${{ env.ENV_NAME }} \
             --s3-bucket ${{ env.SAM_BUCKET }} \
+            --s3-prefix github-actions \
             --region ${{ env.AWS_REGION }} \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
             --no-confirm-changeset \

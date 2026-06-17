@@ -1,7 +1,6 @@
 env:
   AWS_DEFAULT_REGION: "us-east-2"
-  # SAM_BUCKET must be set as a Buildkite Build Variable (pipeline Settings → Build Variables)
-  # so the account ID stays out of source control.
+  SAM_BUCKET: "deployment-artifacts-497862080258-us-east-2-an"
 
 secrets:
   - AWS_ARN_ROLE
@@ -48,6 +47,7 @@ steps:
       sam deploy \
         --stack-name buildkite-lambda-stack-staging \
         --s3-bucket $$SAM_BUCKET \
+        --s3-prefix buildkite \
         --region $$AWS_DEFAULT_REGION \
         --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
         --no-confirm-changeset \
@@ -84,6 +84,7 @@ steps:
       sam deploy \
         --stack-name buildkite-lambda-stack-prod \
         --s3-bucket $$SAM_BUCKET \
+        --s3-prefix buildkite \
         --region $$AWS_DEFAULT_REGION \
         --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
         --no-confirm-changeset \

@@ -208,8 +208,8 @@ aws cloudformation describe-stacks \
 | Setting | Where | Current value |
 |---|---|---|
 | AWS region | pipeline env `AWS_DEFAULT_REGION` | `us-east-2` |
-| AWS account | Buildkite env var `AWS_ACCOUNT_ID` | `<account>` |
-| SAM artifacts bucket | Buildkite env var `SAM_BUCKET` | `deployment-artifacts-<account>-us-east-2-an` |
+| AWS account | n/a | `<account>` |
+| SAM artifacts bucket | pipeline env `SAM_BUCKET` | `deployment-artifacts-<account>-us-east-2-an` |
 | Stack name pattern | inline in pipeline | `buildkite-lambda-stack-<env>` |
 | Function name pattern | parameter `FunctionName` | `buildkite-lambda-function-<env>` |
 | Lambda runtime | `template.yaml` Globals | `python3.12` |
