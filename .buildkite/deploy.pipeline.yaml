@@ -95,5 +95,6 @@ steps:
         --stack-name buildkite-lambda-stack-prod \
         --query "Stacks[0].Outputs" \
         --output table
+        --no-cli-pager
     agents:
       queue: linux-small
