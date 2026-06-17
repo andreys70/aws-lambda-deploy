@@ -154,6 +154,22 @@ Copy the role ARN — you'll add it to Buildkite next.
 
 ## One-time Buildkite setup
 
+### Pipeline "Steps" — point Buildkite at the in-repo YAML
+
+By default, Buildkite runs the steps configured in the pipeline's UI, not the YAML in your repo. To make Buildkite execute `.buildkite/deploy.pipeline.yaml`, configure the pipeline's **Steps** in the Buildkite UI to a single bootstrap step that uploads the in-repo pipeline:
+
+```yaml
+steps:
+  - label: ":pipeline: Upload Pipeline"
+    command: buildkite-agent pipeline upload .buildkite/deploy.pipeline.yaml
+    agents:
+      queue: linux-small
+```
+
+Where to paste this: Buildkite UI → your pipeline → **Settings** → **Steps** (or **Pipeline Settings → Steps**, depending on UI version). Without this, the repo file is ignored and Buildkite runs whatever is in the UI directly.
+
+### Secrets
+
 Buildkite UI → your pipeline → **Settings** → **Secrets** (or organization-level secrets if you want to share across pipelines):
 
 | Name | Value |
