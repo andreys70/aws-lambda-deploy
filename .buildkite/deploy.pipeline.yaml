@@ -1,9 +1,11 @@
-env:
-  AWS_DEFAULT_REGION: "us-east-2"
-  SAM_BUCKET: "deployment-artifacts-497862080258-us-east-2-an"
-
 secrets:
   - AWS_ARN_ROLE
+  - AWS_ACCOUNT_ID
+
+variables:
+env:
+  AWS_DEFAULT_REGION: "us-east-2"
+  SAM_BUCKET: "deployment-artifacts-$$AWS_ACCOUNT_ID-$$AWS_DEFAULT_REGION-an"
   
 steps:
  
