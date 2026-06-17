@@ -94,7 +94,7 @@ steps:
       aws cloudformation describe-stacks \
         --stack-name buildkite-lambda-stack-prod \
         --query "Stacks[0].Outputs" \
-        --output table
+        --output table \
         --no-cli-pager
     agents:
       queue: linux-small
