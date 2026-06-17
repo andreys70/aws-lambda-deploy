@@ -1,32 +1,99 @@
-steps:
-  - label: "📦 Build function"
-    key: "build"
-    commands:
-      - echo "Building Lambda function..."
-      - zip -r lambda_function.zip src/
-    artifact_paths:
-      - "lambda_function.zip"
+env:
+  AWS_DEFAULT_REGION: "us-east-2"
+  SAM_BUCKET: "deployment-artifacts-497862080258-us-east-2-an"
 
-  - label: "🚀 Deploy to Lambda"
-    depends_on: "build"
-    commands:
-      - buildkite-agent artifact download "lambda_function.zip" .
-    plugins:
-      - aws-lambda-deploy#v1.0.0:
-          function-name: "buildkite-lambda-function-prod"
-          alias: "production"
-          mode: "deploy"
-          zip-file: "lambda_function.zip"
-          region: "us-east-2"
-          runtime: "python3.12"
-          handler: "lambda_function.handler"
-          timeout: 30
-          memory-size: 128
-          description: "Deployed from build ${BUILDKITE_BUILD_NUMBER}"
-          environment:
-            LOG_LEVEL: "INFO"
-            STAGE: "production"
-          auto-rollback: true
-          health-check-enabled: true
-          health-check-timeout: 60
-          health-check-payload: '{"test": true}'
+secrets:
+  - AWS_ARN_ROLE
+  
+steps:
+ 
+  # ── Step 1: Validate ────────────────────────────────────────────────
+  - label: ":white_check_mark: Validate SAM Template"
+    command: |
+      pip install aws-sam-cli --quiet
+      sam validate --template template.yaml --region $$AWS_DEFAULT_REGION
+    agents:
+      queue: linux-small
+ 
+  # ── Step 2: Build ────────────────────────────────────────────────────
+  - label: ":hammer: SAM Build"
+    command: |
+      pip install aws-sam-cli --quiet
+      sam build --template template.yaml
+    artifact_paths:
+      - ".aws-sam/**/*"
+    agents:
+      queue: linux-small
+ 
+  - wait
+ 
+  # ── Step 3: Deploy to Staging ────────────────────────────────────────
+  - label: ":rocket: Deploy to Staging"
+    branches: "staging main"
+    command: |
+      pip install aws-sam-cli --quiet
+      buildkite-agent artifact download ".aws-sam/**/*" .
+      
+      OIDC_TOKEN=$$(buildkite-agent oidc request-token --audience sts.amazonaws.com)
+      CREDENTIALS=$$(aws sts assume-role-with-web-identity \
+        --role-arn $$AWS_ARN_ROLE \
+        --role-session-name buildkite-staging \
+        --web-identity-token $$OIDC_TOKEN \
+        --output json)
+      export AWS_ACCESS_KEY_ID=$$(echo $$CREDENTIALS | jq -r '.Credentials.AccessKeyId')
+      export AWS_SECRET_ACCESS_KEY=$$(echo $$CREDENTIALS | jq -r '.Credentials.SecretAccessKey')
+      export AWS_SESSION_TOKEN=$$(echo $$CREDENTIALS | jq -r '.Credentials.SessionToken')
+      
+      sam deploy \
+        --stack-name buildkite-lambda-stack-staging \
+        --s3-bucket $$SAM_BUCKET \
+        --region $$AWS_DEFAULT_REGION \
+        --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+        --no-confirm-changeset \
+        --no-fail-on-empty-changeset \
+        --parameter-overrides \
+          Environment=staging \
+          FunctionName=buildkite-lambda-function
+    agents:
+      queue: linux-small
+ 
+  - wait
+ 
+  # ── Step 4: Manual gate before prod ──────────────────────────────────
+  - block: ":warning: Deploy to Production?"
+    branches: "main"
+ 
+  # ── Step 5: Deploy to Prod ───────────────────────────────────────────
+  - label: ":rocket: Deploy to Production"
+    branches: "main"
+    command: |
+      pip install aws-sam-cli --quiet
+      buildkite-agent artifact download ".aws-sam/**/*" .
+      
+      OIDC_TOKEN=$$(buildkite-agent oidc request-token --audience sts.amazonaws.com)
+      CREDENTIALS=$$(aws sts assume-role-with-web-identity \
+        --role-arn $$AWS_ARN_ROLE \
+        --role-session-name buildkite-prod \
+        --web-identity-token $$OIDC_TOKEN \
+        --output json)
+      export AWS_ACCESS_KEY_ID=$$(echo $$CREDENTIALS | jq -r '.Credentials.AccessKeyId')
+      export AWS_SECRET_ACCESS_KEY=$$(echo $$CREDENTIALS | jq -r '.Credentials.SecretAccessKey')
+      export AWS_SESSION_TOKEN=$$(echo $$CREDENTIALS | jq -r '.Credentials.SessionToken')
+      
+      sam deploy \
+        --stack-name buildkite-lambda-stack-prod \
+        --s3-bucket $$SAM_BUCKET \
+        --region $$AWS_DEFAULT_REGION \
+        --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+        --no-confirm-changeset \
+        --no-fail-on-empty-changeset \
+        --parameter-overrides \
+          Environment=prod \
+          FunctionName=buildkite-lambda-function
+ 
+      aws cloudformation describe-stacks \
+        --stack-name buildkite-lambda-stack-prod \
+        --query "Stacks[0].Outputs" \
+        --output table
+    agents:
+      queue: linux-small
