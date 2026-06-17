@@ -28,8 +28,8 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       AWS_REGION: us-east-2             # change to your region
-      STACK_NAME: my-lambda-stack       # CloudFormation stack name
-      SAM_BUCKET: deployment-artifacts-497862080258-us-east-2-an      # S3 bucket for SAM build artifacts
+      STACK_NAME: github-actions-lambda-stack       # CloudFormation stack name
+      SAM_BUCKET: ${{ vars.SAM_BUCKET }}      # set in repo: Settings → Variables → Actions → SAM_BUCKET
 
     steps:
 
@@ -96,7 +96,7 @@ jobs:
             --no-fail-on-empty-changeset \
             --parameter-overrides \
               Environment=${{ env.ENV_NAME }} \
-              FunctionName=my-lambda-function
+              FunctionName=github-actions-lambda-function
 
       # 8. Print deployed API URL from stack outputs
       - name: Get stack outputs

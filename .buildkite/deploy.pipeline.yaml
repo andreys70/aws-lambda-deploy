@@ -1,6 +1,7 @@
 env:
   AWS_DEFAULT_REGION: "us-east-2"
-  SAM_BUCKET: "deployment-artifacts-497862080258-us-east-2-an"
+  # SAM_BUCKET must be set as a Buildkite Build Variable (pipeline Settings → Build Variables)
+  # so the account ID stays out of source control.
 
 secrets:
   - AWS_ARN_ROLE
