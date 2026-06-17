@@ -1,0 +1,32 @@
+steps:
+  - label: "📦 Build function"
+    key: "build"
+    commands:
+      - echo "Building Lambda function..."
+      - zip -r lambda_function.zip src/
+    artifact_paths:
+      - "lambda_function.zip"
+
+  - label: "🚀 Deploy to Lambda"
+    depends_on: "build"
+    commands:
+      - buildkite-agent artifact download "lambda_function.zip" .
+    plugins:
+      - aws-lambda-deploy#v1.0.0:
+          function-name: "buildkite-lambda-function-prod"
+          alias: "production"
+          mode: "deploy"
+          zip-file: "lambda_function.zip"
+          region: "us-east-2"
+          runtime: "python3.12"
+          handler: "lambda_function.handler"
+          timeout: 30
+          memory-size: 128
+          description: "Deployed from build ${BUILDKITE_BUILD_NUMBER}"
+          environment:
+            LOG_LEVEL: "INFO"
+            STAGE: "production"
+          auto-rollback: true
+          health-check-enabled: true
+          health-check-timeout: 60
+          health-check-payload: '{"test": true}'
