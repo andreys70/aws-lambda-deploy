@@ -1,0 +1,20 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam:[AWS_ACCOUNT_ID]:oidc-provider/agent.buildkite.com"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "agent.buildkite.com:aud": "sts.amazonaws.com"
+                },
+                "StringLike": {
+                    "agent.buildkite.com:sub": "organization:[ORGANIZATION_NAME]:*"
+                }
+            }
+        }
+    ]
+}

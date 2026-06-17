@@ -47,6 +47,7 @@ steps:
       sam deploy \
         --stack-name buildkite-lambda-stack-staging \
         --s3-bucket $$SAM_BUCKET \
+        --s3-prefix buildkite \
         --region $$AWS_DEFAULT_REGION \
         --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
         --no-confirm-changeset \
@@ -83,6 +84,7 @@ steps:
       sam deploy \
         --stack-name buildkite-lambda-stack-prod \
         --s3-bucket $$SAM_BUCKET \
+        --s3-prefix buildkite \
         --region $$AWS_DEFAULT_REGION \
         --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
         --no-confirm-changeset \

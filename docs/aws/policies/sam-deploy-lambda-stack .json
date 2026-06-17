@@ -1,0 +1,83 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "cloudformation:CreateChangeSet",
+                "cloudformation:DescribeChangeSet",
+                "cloudformation:ExecuteChangeSet",
+                "cloudformation:DeleteChangeSet",
+                "cloudformation:DescribeStacks",
+                "cloudformation:DescribeStackEvents",
+                "cloudformation:DescribeStackResource",
+                "cloudformation:DescribeStackResources",
+                "cloudformation:GetTemplate",
+                "cloudformation:GetTemplateSummary",
+                "cloudformation:CreateStack",
+                "cloudformation:UpdateStack",
+                "cloudformation:DeleteStack",
+                "cloudformation:ValidateTemplate"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:GetObjectVersion",
+                "s3:PutObject",
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                "arn:aws:s3:::deployment-artifacts-[AWS_ACCOUNT_ID]-[AWS_REGION]-[AWS_BUCKET_NAME]",
+                "arn:aws:s3:::deployment-artifacts-[AWS_ACCOUNT_ID]-[AWS_REGION]-[AWS_BUCKET_NAME]/*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "iam:CreateRole",
+                "iam:DeleteRole",
+                "iam:GetRole",
+                "iam:UpdateAssumeRolePolicy",
+                "iam:AttachRolePolicy",
+                "iam:DetachRolePolicy",
+                "iam:PutRolePolicy",
+                "iam:DeleteRolePolicy",
+                "iam:GetRolePolicy",
+                "iam:ListRolePolicies",
+                "iam:ListAttachedRolePolicies",
+                "iam:TagRole",
+                "iam:UntagRole",
+                "iam:PassRole"
+            ],
+            "Resource": "arn:aws:iam:[AWS_ACCOUNT_ID]:role/github-actions-lambda-function-execution-role-*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "lambda:*",
+            "Resource": "arn:aws:lambda:[AWS_REGION]:[AWS_ACCOUNT_ID]:function:github-actions-lambda-function-*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "logs:*",
+            "Resource": "arn:aws:logs:[AWS_REGION]:[AWS_ACCOUNT_ID]:log-group:/aws/lambda/github-actions-lambda-function-*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "apigateway:*",
+            "Resource": "arn:aws:apigateway:[AWS_REGION]::/*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "cloudwatch:*",
+            "Resource": "arn:aws:cloudwatch:[AWS_REGION]:[AWS_ACCOUNT_ID]:alarm:github-actions-lambda-function-errors-*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "events:*",
+            "Resource": "arn:aws:events:[AWS_REGION]:[AWS_ACCOUNT_ID]:rule/github-actions-lambda-stack-prod-*"
+        }
+    ]
+}
